@@ -59,3 +59,55 @@ python chunked_transfer.py ./chunked_transfer.py gs://nearline-sd-test//chunked_
 # download
 python chunked_transfer.py gs://nearline-sd-test//chunked_transfer.py ./c.py
 ```
+
+#### [2015/4/22 update] measure http request time
+
+```sh
+@timeit
+def download_with_timer(argv):
+
+  bucket_name, object_name = argv[1][5:].split('/', 1)
+  filename = argv[2]
+  assert bucket_name and object_name
+
+  service = get_authenticated_service(SCOPES)
+
+  print 'Building download request...'
+
+  fh = io.FileIO(filename, mode='wb')
+  request = service.objects().get_media(bucket=bucket_name,
+                                        object=object_name)
+
+  print 'Downloading bucket: %s object: %s to file: %s' % (bucket_name,
+                                                           object_name,
+                                                           filename)
+
+  downloader = MyMediaIoBaseDownload(fh, request)
+  response, content = downloader.execute()
+
+  if len(service._http.connections) > 1:
+    logging.debug("Uh oh, we got pwned. More connections in our Http() than we expected.")
+
+  c = service._http.connections.popitem()[1]
+
+  print 'ttfb(time till first byte) %s sec' % (response.get('x---stop-time') - c._start_time)
+  print 'Download complete!'
+```
+
+add `@timeit` decorator, `MyMediaIoBaseDownload` (fork from apiclient.http without chucked download) and httplib patch to measure http response time.
+
+##### nearline bucket
+
+| file size | whole http request time | ttfb      | function call |
+|-----------|-------------------------|-----------|---------------|
+| 4.02KB    | 3.61 sec                | 3.57 sec  | 5.19 sec      |
+| 1.67MB    | 11.48 sec               | 3.229 sec | 13.43 sec     |
+| 5.56MB    | 20.29 sec               | 1.33 sec  | 21.03 sec     |
+
+##### standard bucket
+
+| file size | whole http request time | ttfb       | function call |
+|-----------|-------------------------|------------|---------------|
+| 1.67MB    | 4.42 sec                | 0.5657 sec | 5.05 sec      |
+| 4.02KB    | 0.67 sec                | 0.642 sec  | 1.71 sec      |
+| 5.56MB    | 32.11sec                | 0.93 sec   | 33.60 sec     |
