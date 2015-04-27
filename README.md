@@ -62,7 +62,7 @@ python chunked_transfer.py gs://nearline-sd-test//chunked_transfer.py ./c.py
 
 #### [2015/4/22 update] measure http request time
 
-```sh
+```python
 @timeit
 def download_with_timer(argv):
 
@@ -96,18 +96,19 @@ def download_with_timer(argv):
 
 add `@timeit` decorator, `MyMediaIoBaseDownload` (fork from apiclient.http without chucked download) and httplib patch to measure http response time.
 
-##### nearline bucket
+#### Testing
 
-| file size | whole http request time | ttfb      | function call |
-|-----------|-------------------------|-----------|---------------|
-| 4.02KB    | 3.61 sec                | 3.57 sec  | 5.19 sec      |
-| 1.67MB    | 11.48 sec               | 3.229 sec | 13.43 sec     |
-| 5.56MB    | 20.29 sec               | 1.33 sec  | 21.03 sec     |
+#####Testing Env
 
-##### standard bucket
+-	n1-standard-1
+-	us-central1-f
 
-| file size | whole http request time | ttfb       | function call |
-|-----------|-------------------------|------------|---------------|
-| 1.67MB    | 4.42 sec                | 0.5657 sec | 5.05 sec      |
-| 4.02KB    | 0.67 sec                | 0.642 sec  | 1.71 sec      |
-| 5.56MB    | 32.11sec                | 0.93 sec   | 33.60 sec     |
+#####Testing parameters
+
+-	files[0]="Hallstatt, Austria.jpg" #4.37.59KB
+-	files[1]="HBase Essentials.pdf" #2.06MB
+-	files[2]="Google BigQuery Analytics.pdf" # 8.35mb
+
+try to download **3** files **10** times from standard bucket and nearline bucket
+
+[GCS standard vs nearline testing on GCE](https://docs.google.com/spreadsheets/d/1k5AiFiu-QScr2n2ys5Aa-XMF0qvBRD9KIE05tA2_qS8/edit?usp=sharing)
